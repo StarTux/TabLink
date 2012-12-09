@@ -1,0 +1,15 @@
+name: TabLink
+main: com.winthier.tablink.TabLinkPlugin
+version: 0.1
+author: StarTux
+description: Link the player lists of different Bukkit servers
+depend: [ WinLink ]
+commands:
+  tablink:
+    description: General purpose command with subcommands
+    permission: tablink.cmd
+    usage: /<command> [command] [arguments]...
+permissions:
+  tablink.cmd:
+    description: Execute the tablink command
+    default: op
