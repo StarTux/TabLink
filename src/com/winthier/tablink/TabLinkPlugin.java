@@ -56,6 +56,7 @@ public class TabLinkPlugin extends JavaPlugin implements Listener {
         private Queue<Object> queue = new ConcurrentLinkedQueue<Object>();
         private BukkitRunnable task;
         private LinkedList<Player> playerList = new LinkedList<Player>(); // for sorting
+        private volatile boolean running = true;
 
         @Override
         public void onEnable() {
@@ -65,20 +66,29 @@ public class TabLinkPlugin extends JavaPlugin implements Listener {
                                 handleClientConnect(connection);
                         }
                 }
+                final TabLinkPlugin plugin = this;
                 task = new BukkitRunnable() {
                         public void run() {
                                 try {
-                                        iter();
+                                        while (running) {
+                                                try { Thread.sleep(1000); } catch (InterruptedException ie) {}
+                                                new BukkitRunnable() {
+                                                        public void run() {
+                                                                iter();
+                                                        }
+                                                }.runTask(plugin);
+                                        }
                                 } catch (Exception e) {
                                         e.printStackTrace();
                                 }
                         }
                 };
-                task.runTaskTimer(this, 20L, 20L);
+                task.runTaskAsynchronously(this);
         }
 
         @Override
         public void onDisable() {
+                running = false;
                 task.cancel();
                 for (PlayerList list : remoteLists.values()) {
                         list.terminate();
