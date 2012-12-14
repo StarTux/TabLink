@@ -57,6 +57,7 @@ public class TabLinkPlugin extends JavaPlugin implements Listener {
         private BukkitRunnable task;
         private LinkedList<Player> playerList = new LinkedList<Player>(); // for sorting
         private volatile boolean running = true;
+        private volatile DirtyState dirty = DirtyState.DIRTY;
 
         @Override
         public void onEnable() {
@@ -109,6 +110,7 @@ public class TabLinkPlugin extends JavaPlugin implements Listener {
                                 PlayerList list = remoteLists.get(message.connection.getName());
                                 list.update(message.playerStatus);
                                 list.broadcast(message.playerStatus);
+                                dirty = DirtyState.DIRTY;
                         } else if (msg instanceof ClientConnectionMessage) {
                                 // Connected to a remote server
                                 ClientConnectionMessage message = (ClientConnectionMessage)msg;
@@ -125,7 +127,7 @@ public class TabLinkPlugin extends JavaPlugin implements Listener {
                                 }
                         }
                 }
-                sortIter();
+                if (dirty != DirtyState.CLEAN) sortIter();
         }
 
         protected void handleClientConnect(ClientConnection connection) {
@@ -146,7 +148,14 @@ public class TabLinkPlugin extends JavaPlugin implements Listener {
                 Player currentPlayer;
                 if ((currentPlayer = playerList.poll()) == null) {
                         for (Player player : getServer().getOnlinePlayers()) playerList.add(player);
-                        if (playerList.isEmpty()) return;
+                        switch (dirty) {
+                        case DIRTY:
+                                dirty = DirtyState.PROCESSING;
+                                break;
+                        case PROCESSING:
+                                dirty = DirtyState.CLEAN;
+                                break;
+                        }
                 } else {
                         for (PlayerList list : remoteLists.values()) {
                                 for (PlayerStatus status : list.getList()) {
@@ -180,11 +189,15 @@ public class TabLinkPlugin extends JavaPlugin implements Listener {
                         WinLinkPlugin.getWinLink().broadcastPacket(new PlayerStatus(Util.replaceColorCodes(args[1]), false));
                 } else if (args.length == 2 && args[0].equals("show")) {
                         Util.broadcastStatus(Util.replaceColorCodes(args[1]), true);
+                        dirty = DirtyState.DIRTY;
                 } else if (args.length == 2 && args[0].equals("hide")) {
                         Util.broadcastStatus(Util.replaceColorCodes(args[1]), false);
+                        dirty = DirtyState.DIRTY;
+                } else if (args.length == 1 && args[0].equals("sort")) {
+                        dirty = DirtyState.DIRTY;
                 } else {
                         sender.sendMessage("Usage: /tablink [subcommand] ...");
-                        sender.sendMessage("Subcommands: list, reload");
+                        sender.sendMessage("Subcommands: list, reload, sort");
                 }
                 return true;
         }
@@ -198,16 +211,19 @@ public class TabLinkPlugin extends JavaPlugin implements Listener {
         public void onPlayerJoin(PlayerJoinEvent event) {
                 WinLinkPlugin.getWinLink().broadcastPacket(new PlayerStatus(event.getPlayer().getName(), true));
                 for (PlayerList list : remoteLists.values()) list.send(event.getPlayer());
+                dirty = DirtyState.DIRTY;
         }
 
         @EventHandler(priority = EventPriority.MONITOR)
         public void onPlayerQuit(PlayerQuitEvent event) {
                 WinLinkPlugin.getWinLink().broadcastPacket(new PlayerStatus(event.getPlayer().getName(), false));
+                dirty = DirtyState.DIRTY;
         }
 
         @EventHandler(priority = EventPriority.MONITOR)
         public void onPlayerKick(PlayerKickEvent event) {
                 WinLinkPlugin.getWinLink().broadcastPacket(new PlayerStatus(event.getPlayer().getName(), false));
+                dirty = DirtyState.DIRTY;
         }
 
         @EventHandler(priority = EventPriority.MONITOR)
@@ -233,4 +249,11 @@ public class TabLinkPlugin extends JavaPlugin implements Listener {
                         sendMessage(new PlayerListRequestMessage(event.getConnection()));
                 }
         }
+
+}
+
+enum DirtyState {
+        DIRTY,
+        PROCESSING,
+        CLEAN;
 }
