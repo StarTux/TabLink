@@ -108,9 +108,11 @@ public class TabLinkPlugin extends JavaPlugin implements Listener {
                                 // Received a player status update from a remote server
                                 PlayerStatusMessage message = (PlayerStatusMessage)msg;
                                 PlayerList list = remoteLists.get(message.connection.getName());
-                                list.update(message.playerStatus);
-                                list.broadcast(message.playerStatus);
-                                dirty = DirtyState.DIRTY;
+                                if (list != null) {
+                                        list.update(message.playerStatus);
+                                        list.broadcast(message.playerStatus);
+                                        dirty = DirtyState.DIRTY;
+                                }
                         } else if (msg instanceof ClientConnectionMessage) {
                                 // Connected to a remote server
                                 ClientConnectionMessage message = (ClientConnectionMessage)msg;
