@@ -22,10 +22,10 @@ package com.winthier.tablink;
 import com.winthier.tablink.packet.PlayerStatus;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import net.minecraft.server.Packet201PlayerInfo;
+import net.minecraft.server.v1_4_R1.Packet201PlayerInfo;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.craftbukkit.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_4_R1.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 
 /**
@@ -43,7 +43,7 @@ public class Util {
         private static void sendInfo(Packet201PlayerInfo info, Player recipient) {
                 if (!(recipient instanceof CraftPlayer)) return;
                 CraftPlayer player = (CraftPlayer)recipient;
-                player.getHandle().netServerHandler.sendPacket(info);
+                player.getHandle().playerConnection.sendPacket(info);
         }
 
         private static Packet201PlayerInfo createPlayerInfo(String name, boolean online, int ping) {
